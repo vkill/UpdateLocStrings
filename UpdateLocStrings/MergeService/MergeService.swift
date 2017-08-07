@@ -14,7 +14,7 @@ final public class MergeService {
     
     private let outputDirectory: String
     private let stringsFileExtension = ".strings"
-    private let mergeFileExtension = ".merge_old"
+    private let backupFileExtension = ".backup"
     
     // MARK: - Init
     
@@ -31,27 +31,19 @@ final public class MergeService {
             return
         }
         
-        try moveStringsFilesForMerge(originalFiles)
+        try backupStringsFiles(originalFiles)
     }
     
     func performMerge() throws {
         let stringsFiles = findFiles(with: stringsFileExtension)
         
         for file in stringsFiles {
-            let newFile = outputDirectory.appending("/\(file)")
-            let oldFile = newFile.appending(mergeFileExtension)
-            try merge(oldFile, to: newFile)
-        }
-    }
-    
-    func completeMerge() throws {
-        let mergeFiles = findFiles(with: mergeFileExtension)
-        
-        guard mergeFiles.count > 0 else {
-            return
+            let filePath = outputDirectory.appending("/\(file)")
+            let backupFilePath = filePath.appending(backupFileExtension)
+            try mergeFile(atPath: filePath, withBackupPath: backupFilePath)
         }
         
-        try removeMergeFiles(mergeFiles)
+        try completeMerge()
     }
     
     // MARK: - Private methods
@@ -69,42 +61,45 @@ final public class MergeService {
         }
     }
     
-    private func moveStringsFilesForMerge(_ files: [String]) throws {
+    private func backupStringsFiles(_ files: [String]) throws {
         for file in files {
-            let source = outputDirectory.appending("/\(file)")
-            let destination = source.appending(mergeFileExtension)
-            try FileManager.default.moveItem(atPath: source, toPath: destination)
+            let filePath = outputDirectory.appending("/\(file)")
+            let backupPath = filePath.appending(backupFileExtension)
+            try FileManager.default.moveItem(atPath: filePath, toPath: backupPath)
         }
     }
     
-    private func removeMergeFiles(_ files: [String]) throws {
-        for file in files {
-            try FileManager.default.removeItem(atPath: outputDirectory.appending("/\(file)"))
+    private func moveUnusedBackupFiles(_ files: [String]) throws {
+        for backupFile in files {
+            let fileName = backupFile.replacingOccurrences(of: backupFileExtension, with: "")
+            try FileManager.default.moveItem(atPath: outputDirectory.appending("/\(backupFile)"),
+                                             toPath: outputDirectory.appending("/\(fileName)"))
         }
     }
     
     // MARK: Merge
     
-    private func merge(_ sourcePath: String, to destinationPath: String) throws {
+    private func mergeFile(atPath path: String, withBackupPath backupPath: String) throws {
         let fileManager = FileManager.default
-        guard fileManager.fileExists(atPath: sourcePath), fileManager.fileExists(atPath: destinationPath) else {
+        guard fileManager.fileExists(atPath: path), fileManager.fileExists(atPath: backupPath) else {
             return
         }
         
-        let sourceStrings = try StringsFileParser.parse(contentOf: sourcePath)
-        let destinationStrings = try StringsFileParser.parse(contentOf: destinationPath)
+        let localizedStrings = try StringsFileParser.parse(contentOf: path)
+        let backupStrings = try StringsFileParser.parse(contentOf: backupPath)
         var resultStrings: [LocalizedString] = []
         
-        for string in destinationStrings {
-            let updatedString = updateStringIfNeeded(string, with: sourceStrings)
+        for string in localizedStrings {
+            let updatedString = updateStringIfNeeded(string, with: backupStrings)
             resultStrings.append(updatedString)
         }
         
-        try serializeStrings(resultStrings, to: destinationPath)
+        try serializeStrings(resultStrings, to: path)
+        try fileManager.removeItem(atPath: backupPath)
     }
     
-    private func updateStringIfNeeded(_ string: LocalizedString, with existStrings: [LocalizedString]) -> LocalizedString {
-        if let existString = localizedString(with: string.key, in: existStrings) {
+    private func updateStringIfNeeded(_ string: LocalizedString, with backupStrings: [LocalizedString]) -> LocalizedString {
+        if let existString = findLocalizedString(with: string.key, in: backupStrings) {
             let updatedString = LocalizedString(comment: string.comment, key: string.key, value: existString.value)
             return updatedString
         }
@@ -112,7 +107,7 @@ final public class MergeService {
         return string
     }
     
-    private func localizedString(with key: String, in strings: [LocalizedString]) -> LocalizedString? {
+    private func findLocalizedString(with key: String, in strings: [LocalizedString]) -> LocalizedString? {
         for string in strings {
             if string.key == key {
                 return string
@@ -131,6 +126,16 @@ final public class MergeService {
         }
         
         try content.write(toFile: filePath, atomically: true, encoding: .utf16)
+    }
+    
+    private func completeMerge() throws {
+        let backupFiles = findFiles(with: backupFileExtension)
+        
+        guard backupFiles.count > 0 else {
+            return
+        }
+        
+        try moveUnusedBackupFiles(backupFiles)
     }
     
 }

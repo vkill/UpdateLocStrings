@@ -20,7 +20,8 @@ final class TestDataSource {
     // MARK: - Internal static properties
     
     static let testDataDirectory = "TestData"
-    static let outputDirectory = NSString(string: "~/Desktop/UpdateLocStringsTests").expandingTildeInPath
+    static let documentsDir = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).last!
+    static let outputDirectory = NSString(string: "\(documentsDir)/UpdateLocStringsTests").expandingTildeInPath
     
     static let objcResource = "TestObjCClass"
     static let objcUpdatedResource = "TestUpdatedObjCClass"
@@ -31,6 +32,7 @@ final class TestDataSource {
     static let swiftType = "swift"
     
     static let stringsResource = "TestLocalizable"
+    static let unusedStringsResource = "UnusedStrings"
     static let stringsType = "strings"
     
     // MARK: - Internal static methods

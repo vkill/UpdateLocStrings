@@ -43,7 +43,6 @@ func performMergeIfNeeded(with service: MergeService?) {
     
     do {
         try mergeService.performMerge()
-        try mergeService.completeMerge()
     }
     catch {
         print(error)
