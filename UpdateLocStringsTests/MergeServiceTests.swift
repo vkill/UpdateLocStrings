@@ -56,7 +56,7 @@ class MergeServiceTests: XCTestCase {
         }
         
         let preparedFiles: [String]
-        let preparedFileExtension = ".merge_old"
+        let preparedFileExtension = ".backup"
         
         do {
             let files = try FileManager.default.contentsOfDirectory(atPath: TestDataSource.outputDirectory)
@@ -85,7 +85,7 @@ class MergeServiceTests: XCTestCase {
             XCTFail()
         }
         
-        let preparedFileExtension = ".merge_old"
+        let preparedFileExtension = ".backup"
         
         do {
             let files = try FileManager.default.contentsOfDirectory(atPath: TestDataSource.outputDirectory)
@@ -162,9 +162,29 @@ class MergeServiceTests: XCTestCase {
         XCTAssertTrue(fifthString.value == "default value", "string exist before merge (should keep old value)")
     }
     
-    func testCompleteMerge() {
-        generateStringsFile(objcFileName: TestDataSource.objcResource,
-                            swiftFileName: TestDataSource.swiftResource)
+    func testKeepUnusedStringsFile() {
+        let stringsFiles = generateStringsFile(objcFileName: TestDataSource.objcResource,
+                                               swiftFileName: TestDataSource.swiftResource)
+        XCTAssertTrue(stringsFiles.count > 0)
+        
+        let filePath = TestDataSource.pathForTestDataResource(TestDataSource.unusedStringsResource,
+                                                              ofType: TestDataSource.stringsType)
+        guard let unusedStringsPath = filePath else {
+            XCTFail()
+            return
+        }
+        
+        let unusedStringFileName = TestDataSource.unusedStringsResource + "." + TestDataSource.stringsType
+        let copyPath = TestDataSource.outputDirectory.appending("/\(unusedStringFileName)")
+        
+        do {
+            try FileManager.default.copyItem(atPath: unusedStringsPath, toPath: copyPath)
+        }
+        catch {
+            print(error)
+            XCTFail()
+        }
+        
         let service = MergeService(outputDirectory: TestDataSource.outputDirectory)
         do {
             try service.prepareForMerge()
@@ -174,9 +194,6 @@ class MergeServiceTests: XCTestCase {
             XCTFail()
         }
         
-        generateStringsFile(objcFileName: TestDataSource.objcUpdatedResource,
-                            swiftFileName: TestDataSource.swiftUpdatedResource)
-        
         do {
             try service.performMerge()
         }
@@ -184,26 +201,8 @@ class MergeServiceTests: XCTestCase {
             print(error)
             XCTFail()
         }
-        
-        do {
-            try service.completeMerge()
-        }
-        catch {
-            print(error)
-            XCTFail()
-        }
-        
-        let preparedFileExtension = ".merge_old"
-        
-        do {
-            let files = try FileManager.default.contentsOfDirectory(atPath: TestDataSource.outputDirectory)
-            let preparedFiles = files.filter { $0.hasSuffix(preparedFileExtension) }
-            XCTAssertTrue(preparedFiles.count == 0)
-        }
-        catch {
-            print(error)
-            XCTFail()
-        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: copyPath), "Should keep unused strings files") 
     }
 
 }
