@@ -27,7 +27,7 @@ final class StringsFileParser {
         let regex = try NSRegularExpression(pattern: pattern, options: [])
         let result = regex.matches(in: content,
                                    options: [],
-                                   range: NSRange(location: 0, length: content.characters.count))
+                                   range: NSRange(location: 0, length: content.count))
         
         var strings: [LocalizedString] = []
         
@@ -43,15 +43,15 @@ final class StringsFileParser {
     // MARK: - Private methods
     
     private static func localizedString(from match: NSTextCheckingResult, in text: String) -> LocalizedString? {
-        guard let commentRange = text.range(from: match.rangeAt(1)),
-            let keyRange = text.range(from: match.rangeAt(2)),
-            let valueRange = text.range(from: match.rangeAt(3)) else {
+        guard let commentRange = text.range(from: match.range(at: 1)),
+            let keyRange = text.range(from: match.range(at: 2)),
+            let valueRange = text.range(from: match.range(at: 3)) else {
                 return nil
         }
         
-        let comment = text.substring(with: commentRange)
-        let key = text.substring(with: keyRange)
-        let value = text.substring(with: valueRange)
+        let comment = String(text[commentRange])
+        let key = String(text[keyRange])
+        let value = String(text[valueRange])
         
         return LocalizedString(comment: comment, key: key, value: value)
     }
