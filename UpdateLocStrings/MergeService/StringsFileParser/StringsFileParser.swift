@@ -21,7 +21,7 @@ final class StringsFileParser {
         //
         let task = Process()
         task.launchPath = "/bin/bash"
-        task.arguments = ["-c", "trap 'rm -rf \(filePath).utf8' ERR; iconv -f UTF-16LE -t UTF-8 \(filePath) > \(filePath).utf8 && mv -f \(filePath).utf8 \(filePath)"]
+        task.arguments = ["-c", "iconv -f UTF-16LE -t UTF-8 '\(filePath)' > '\(filePath).utf8' && mv -f '\(filePath).utf8' '\(filePath)' || rm -rf '\(filePath).utf8'"]
         task.launch()
         task.waitUntilExit()
 
