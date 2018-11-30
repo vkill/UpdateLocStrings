@@ -18,8 +18,15 @@ final class StringsFileParser {
             return []
         }
         
+        //
+        let task = Process()
+        task.launchPath = "/bin/bash"
+        task.arguments = ["-c", "trap 'rm -rf \(filePath).utf8' ERR; iconv -f UTF-16LE -t UTF-8 \(filePath) > \(filePath).utf8 && mv -f \(filePath).utf8 \(filePath)"]
+        task.launch()
+        task.waitUntilExit()
+
         // TODO: Add support for strings without comment and strings with multiple comments
-        let content = try String(contentsOfFile: filePath, encoding: .utf16)
+        let content = try String(contentsOfFile: filePath, encoding: .utf8)
         let commentPattern = "/\\* (.*) \\*/"
         let keyValuePattern = "\"(.*)\""
         let pattern = "\(commentPattern)\n\(keyValuePattern) = \(keyValuePattern);"

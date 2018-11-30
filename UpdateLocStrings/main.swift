@@ -52,7 +52,7 @@ func performMergeIfNeeded(with service: MergeService?) {
 func launchExtractLocStringsTask(with rawArguments: [String]) {
     let task = ExtractLocStringsTask()
     // Should remove first argument with path of executable file (UpdateLocStrings)
-    let launchArguments = Array(rawArguments.dropFirst())
+    let launchArguments = Array(rawArguments.dropFirst().filter{ $0 != "-m" })
     if launchArguments.count == 0 {
         printUsageHelp()
     }

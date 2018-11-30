@@ -125,7 +125,7 @@ final public class MergeService {
             content.append("\n\n")
         }
         
-        try content.write(toFile: filePath, atomically: true, encoding: .utf16)
+        try content.write(toFile: filePath, atomically: true, encoding: .utf8)
     }
     
     private func completeMerge() throws {
